@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced AI Art Generator</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        
+        #toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button,
+        select {
+            padding: 10px 15px;
+            font-size: 16px;
+            background-color: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        
+        button:hover,
+        select:hover {
+            background-color: #555;
+        }
+        
+        canvas {
+            border: 1px solid white;
+            cursor: crosshair;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="toolbar">
+        <select id="brushType">
+      <option value="basic">Basic Brush</option>
+      <option value="particle">Particle Brush</option>
+      <option value="symmetry">Symmetry Brush</option>
+      <option value="fractal">Fractal</option>
+      <option value="pen">Pen (Writing)</option>
+    </select>
+        <button id="clearCanvas">Clear</button>
+        <button id="saveArt">Save Art</button>
+    </div>
+    <canvas id="artCanvas" width="800" height="600"></canvas>
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById("artCanvas");
+        const ctx = canvas.getContext("2d");
+        let painting = false;
+        let brushType = "basic";
+
+        // Mouse position tracking
+        let lastX = 0,
+            lastY = 0;
+        const getMousePos = (e) => ({
+            x: e.clientX - canvas.offsetLeft,
+            y: e.clientY - canvas.offsetTop,
+        });
+
+        // Event Listeners
+        canvas.addEventListener("mousedown", (e) => {
+            painting = true;
+            const {
+                x,
+                y
+            } = getMousePos(e);
+            lastX = x;
+            lastY = y;
+
+            if (brushType === "fractal") {
+                drawFractal(ctx, x, y, 100, -Math.PI / 2, 6);
+            } else if (brushType === "pen") {
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            }
+        });
+
+        canvas.addEventListener("mouseup", () => (painting = false));
+        canvas.addEventListener("mousemove", (e) => {
+            if (painting) {
+                const mousePos = getMousePos(e);
+                draw(mousePos);
+            }
+        });
+
+        document.getElementById("brushType").addEventListener("change", (e) => {
+            brushType = e.target.value;
+        });
+
+        document.getElementById("clearCanvas").addEventListener("click", () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        document.getElementById("saveArt").addEventListener("click", () => {
+            const link = document.createElement("a");
+            link.download = "artwork.png";
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+
+        // Brush Drawing Functions
+        function draw({
+            x,
+            y
+        }) {
+            if (brushType === "basic") {
+                drawBasic(x, y);
+            } else if (brushType === "particle") {
+                drawParticle(x, y);
+            } else if (brushType === "symmetry") {
+                drawSymmetry(x, y);
+            } else if (brushType === "pen") {
+                drawPen(x, y);
+            }
+        }
+
+        function drawBasic(x, y) {
+            ctx.lineWidth = 5;
+            ctx.lineCap = "round";
+            ctx.strokeStyle = "white";
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        function drawParticle(x, y) {
+            for (let i = 0; i < 10; i++) {
+                const offsetX = (Math.random() - 0.5) * 30;
+                const offsetY = (Math.random() - 0.5) * 30;
+                ctx.fillStyle = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                ctx.beginPath();
+                ctx.arc(x + offsetX, y + offsetY, Math.random() * 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawSymmetry(x, y) {
+            const centerX = canvas.width / 2;
+            ctx.lineWidth = 3;
+            ctx.lineCap = "round";
+            ctx.strokeStyle = `hsl(${Math.random() * 360}, 100%, 50%)`;
+
+            // Draw original stroke
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+
+            // Mirror horizontally
+            const mirrorX = 2 * centerX - x;
+            ctx.lineTo(mirrorX, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(mirrorX, y);
+        }
+
+        function drawPen(x, y) {
+            ctx.lineWidth = 2; // Thinner lines for writing
+            ctx.lineCap = "round";
+            ctx.strokeStyle = "white";
+
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            lastX = x;
+            lastY = y;
+        }
+
+        // Fractal Drawing Function
+        function drawFractal(ctx, x, y, length, angle, depth) {
+            if (depth === 0) return;
+
+            const xEnd = x + length * Math.cos(angle);
+            const yEnd = y + length * Math.sin(angle);
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(xEnd, yEnd);
+            ctx.strokeStyle = `hsl(${depth * 50}, 100%, 50%)`;
+            ctx.lineWidth = depth;
+            ctx.stroke();
+
+            drawFractal(ctx, xEnd, yEnd, length * 0.7, angle - Math.PI / 6, depth - 1);
+            drawFractal(ctx, xEnd, yEnd, length * 0.7, angle + Math.PI / 6, depth - 1);
+        }
+
+        // Initialize Canvas
+        ctx.fillStyle = "#121212";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    </script>
+</body>
+
+</html>
